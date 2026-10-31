@@ -23,6 +23,43 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Arrange files (flat repo -> www/ and assets/)
-        run: |
-          m
+      - name: Make folders
+        run: mkdir -p www/audio assets
+
+      - name: Copy web file
+        run: cp index.html www/index.html
+
+      - name: Copy music
+        run: cp haggstrom.mp3 subwoofer-lullaby.mp3 minecraft.mp3 www/audio/
+
+      - name: Copy icons
+        run: cp icon-only.png icon-foreground.png icon-background.png assets/
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Add Android platform
+        run: npx cap add android
+
+      - name: Generate app icons (optional step)
+        continue-on-error: true
+        run: npx --yes @capacitor/assets@3.0.5 generate --android --iconBackgroundColor '#1a1033' --iconBackgroundColorDark '#1a1033'
+
+      - name: Lock the app to portrait
+        run: sed -i 's/<activity/<activity android:screenOrientation="portrait"/' android/app/src/main/AndroidManifest.xml
+
+      - name: Sync web files into the Android project
+        run: npx cap sync android
+
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
+
+      - name: Build debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-flex-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
